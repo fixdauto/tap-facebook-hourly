@@ -40,13 +40,11 @@ STREAM_TYPES = [
 DEFAULT_INSIGHT_REPORT = {
     "name": "default",
     "level": "ad",
-    "action_breakdowns": [],
-    "breakdowns": [],
+    "action_breakdowns": ["action_type"],
+    "breakdowns": ["hourly_stats_aggregated_by_advertiser_time_zone"],
     "time_increment_days": 1,
-    "action_attribution_windows_view": "1d_view",
-    "action_attribution_windows_click": "7d_click",
     "action_report_time": "mixed",
-    "lookback_window": 28,
+    "lookback_window": 14,
 }
 
 
@@ -165,7 +163,7 @@ class TapFacebook(Tap):
                             "means that all data from the past 28 days may have changed since we "
                             "last emitted it, so we attempt to retrieve it again."
                         ),
-                        default=28,
+                        default=14,
                     ),
                 ),
             ),

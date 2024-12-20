@@ -79,7 +79,7 @@ class AdsInsightStream(Stream):
 
     @property
     def primary_keys(self) -> t.Sequence[str] | None:
-        return ["date_start", "account_id", "ad_id"] + self._report_definition["breakdowns"]
+        return ["date_start", "account_id", "ad_id", "hourly_stats_aggregated_by_advertiser_time_zone"]
 
     @primary_keys.setter
     def primary_keys(self, new_value: list[str] | None) -> None:
@@ -280,6 +280,7 @@ class AdsInsightStream(Stream):
         report_end = report_start.add(days=time_increment)
 
         columns = self._get_selected_columns()
+        columns.remove("hourly_stats_aggregated_by_advertiser_time_zone")
         while report_start <= sync_end_date:
             params = {
                 "level": self._report_definition["level"],
@@ -289,10 +290,11 @@ class AdsInsightStream(Stream):
                 "fields": columns,
                 "time_increment": time_increment,
                 "limit": 100,
-                "action_attribution_windows": [
-                    self._report_definition["action_attribution_windows_view"],
-                    self._report_definition["action_attribution_windows_click"],
-                ],
+                "action_attribution_windows": ["28d_click"],
+                # "action_attribution_windows": [
+                #     self._report_definition["action_attribution_windows_view"],
+                #     self._report_definition["action_attribution_windows_click"],
+                # ],
                 "time_range": {
                     "since": report_start.to_date_string(),
                     "until": report_end.to_date_string(),
@@ -300,7 +302,10 @@ class AdsInsightStream(Stream):
             }
             job = self._run_job_to_completion(params)  # type: ignore[func-returns-value]
             for obj in job.get_result():
-                yield obj.export_all_data()
+                if "hourly_stats_aggregated_by_advertiser_time_zone" in obj:
+                    yield obj.export_all_data()
+                else:
+                    self.logger.info("ALERT: The result object does not contain the key 'hourly_stats_aggregated_by_advertiser_time_zone'")
             # Bump to the next increment
             report_start = report_start.add(days=time_increment)
             report_end = report_end.add(days=time_increment)
