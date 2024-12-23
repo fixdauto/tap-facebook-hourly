@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 import typing as t
 from functools import lru_cache
+from datetime import datetime, timedelta
 
 import facebook_business.adobjects.user as fb_user
 import pendulum
@@ -227,26 +228,31 @@ class AdsInsightStream(Stream):
     ) -> pendulum.Date:
         lookback_window = self._report_definition["lookback_window"]
 
-        config_start_date = pendulum.parse(self.config["start_date"]).date()  # type: ignore[union-attr]
-        incremental_start_date = pendulum.parse(  # type: ignore[union-attr]
-            self.get_starting_replication_key_value(context),  # type: ignore[arg-type]
-        ).date()
-        lookback_start_date = incremental_start_date.subtract(days=lookback_window)
+        if "start_date" in self.config.keys():
+            config_start_date = pendulum.parse(self.config["start_date"]).date()  # type: ignore[union-attr]
+            incremental_start_date = pendulum.parse(  # type: ignore[union-attr]
+                self.get_starting_replication_key_value(context),  # type: ignore[arg-type]
+            ).date()
+            lookback_start_date = incremental_start_date.subtract(days=lookback_window)
 
-        # Don't use lookback if this is the first sync. Just start where the user requested.
-        if config_start_date >= incremental_start_date:
-            report_start = config_start_date
-            self.logger.info("Using configured start_date as report start filter.")
+            # Don't use lookback if this is the first sync. Just start where the user requested.
+            if config_start_date >= incremental_start_date:
+                report_start = config_start_date
+                self.logger.info("Using configured start_date as report start filter.")
+            else:
+                self.logger.info(
+                    "Incremental sync, applying lookback '%s' to the "
+                    "bookmark start_date '%s'. Syncing "
+                    "reports starting on '%s'.",
+                    lookback_window,
+                    incremental_start_date,
+                    lookback_start_date,
+                )
+                report_start = lookback_start_date
         else:
-            self.logger.info(
-                "Incremental sync, applying lookback '%s' to the "
-                "bookmark start_date '%s'. Syncing "
-                "reports starting on '%s'.",
-                lookback_window,
-                incremental_start_date,
-                lookback_start_date,
-            )
-            report_start = lookback_start_date
+            utc_now = datetime.utcnow()
+            start_date = utc_now - timedelta(days=lookback_window)
+            return start_date
 
         # Facebook store metrics maximum of 37 months old. Any time range that
         # older that 37 months from current date would result in 400 Bad request
@@ -276,7 +282,9 @@ class AdsInsightStream(Stream):
             self.config.get("end_date", pendulum.today().to_date_string()),
         ).date()
 
-        report_start = self._get_start_date(context)
+        report_start = self._get_start_date(context).date()
+        if not isinstance(report_start, pendulum.DateTime):
+            report_start = pendulum.instance(report_start)
         report_end = report_start.add(days=time_increment)
 
         columns = self._get_selected_columns()
