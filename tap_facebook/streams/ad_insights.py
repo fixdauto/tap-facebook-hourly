@@ -60,6 +60,74 @@ EXCLUDED_FIELDS = [
     "estimated_ad_recall_rate_upper_bound",
     "estimated_ad_recallers_lower_bound",
     "estimated_ad_recallers_upper_bound",
+    "ad_click_actions",
+    "ad_impression_actions",
+    "attribution_setting",
+    "auction_bid",
+    "auction_competitiveness",
+    "auction_max_competitor_bid",
+    "average_purchases_conversion_value",
+    "buying_type",
+    "catalog_segment_actions",
+    "catalog_segment_value",
+    "catalog_segment_value_mobile_purchase_roas",
+    "catalog_segment_value_omni_purchase_roas",
+    "catalog_segment_value_website_purchase_roas",
+    "conversion_rate_ranking",
+    "conversion_values",
+    "conversions",
+    "converted_product_quantity",
+    "converted_product_value",
+    "cost_per_15_sec_video_view",
+    "cost_per_2_sec_continuous_video_view",
+    "cost_per_action_type",
+    "cost_per_ad_click",
+    "cost_per_conversion",
+    "cost_per_estimated_ad_recallers",
+    "cost_per_inline_link_click",
+    "cost_per_inline_post_engagement",
+    "cost_per_outbound_click",
+    "cost_per_thruplay",
+    "cost_per_unique_action_type",
+    "cost_per_unique_click",
+    "cost_per_unique_inline_link_click",
+    "cost_per_unique_outbound_click",
+    "cpc",
+    "cpm",
+    "cpp",
+    "ctr",
+    "engagement_rate_ranking",
+    "estimated_ad_recall_rate",
+    "estimated_ad_recallers",
+    "frequency",
+    "full_view_impressions",
+    "full_view_reach",
+    "inline_post_engagement",
+    "instant_experience_clicks_to_open",
+    "instant_experience_clicks_to_start",
+    "instant_experience_outbound_clicks",
+    "marketing_messages_delivery_rate",
+    "marketing_messages_link_btn_click_rate",
+    "marketing_messages_media_view_rate",
+    "marketing_messages_phone_call_btn_click_rate",
+    "marketing_messages_quick_reply_btn_click_rate",
+    "marketing_messages_read_rate",
+    "marketing_messages_website_purchase_values",
+    "mobile_app_purchase_roas",
+    "objective",
+    "onsite_conversion_messaging_detected_purchase_deduped",
+    "optimization_goal",
+    "outbound_clicks",
+    "outbound_clicks_ctr",
+    "purchase_roas",
+    "qualifying_question_qualify_answer_rate",
+    "quality_ranking",
+    "reach",
+    "shops_assisted_purchases",
+    "social_spend",
+    "unique_actions",
+    "actions",
+    "action_values"
 ]
 
 SLEEP_TIME_INCREMENT = 5
@@ -252,7 +320,7 @@ class AdsInsightStream(Stream):
         else:
             utc_now = datetime.utcnow()
             start_date = utc_now - timedelta(days=lookback_window)
-            return start_date
+            return start_date.date()
 
         # Facebook store metrics maximum of 37 months old. Any time range that
         # older that 37 months from current date would result in 400 Bad request
@@ -282,7 +350,7 @@ class AdsInsightStream(Stream):
             self.config.get("end_date", pendulum.today().to_date_string()),
         ).date()
 
-        report_start = self._get_start_date(context).date()
+        report_start = self._get_start_date(context)
         if not isinstance(report_start, pendulum.DateTime):
             report_start = pendulum.instance(report_start)
         report_end = report_start.add(days=time_increment)
