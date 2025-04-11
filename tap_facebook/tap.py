@@ -44,7 +44,7 @@ DEFAULT_INSIGHT_REPORT = {
     "breakdowns": ["hourly_stats_aggregated_by_advertiser_time_zone"],
     "time_increment_days": 1,
     "action_report_time": "mixed",
-    "lookback_window": 14,
+    "lookback_window": 8,
 }
 
 
